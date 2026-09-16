@@ -20,7 +20,9 @@ The backlog for `shop_assistant/` lives in Notion. Follow `Order` top to bottom 
 
 ## Schema
 
-`Name` title · `Order` number (dependency sequence, primary sort) · `Sprint` S1/S2/S3/R2 backlog · `Release` MVP/R2 · `Status` To Do/In Progress/Done · `Epic` E1 Setup/E2 Ingest/E3 Search/E4 Agent/E5 Bot/E6 Eval & Deploy · `Est (days)` · `Req` FR/NFR/AC ids · `Blocks` plain words · `Description` one line (body has Scope / Acceptance criteria / Notes).
+`Name` title · `Order` number (dependency sequence, primary sort) · `Sprint` S1/S2/S3/R2 backlog · `Release` MVP/R2 · `Status` To Do/In Progress/Done · `Epic` E1 Setup/E2 Ingest/E3 Search/E4 Agent/E5 Bot/E6 Eval & Deploy · `Est (days)` · `Req` FR/NFR/AC ids · `Blocks` plain words · `Description` one line · `Owner` Sanjar/Abdurauf/Artur · `Track` A Search/B Ingest/C Agent/Bot.
+
+Ticket body (junior-ready, since 2026-09-16): `## Scope` (Goal, Needs, Files you touch) · `## Steps` (numbered, each with a command + expected output, code patterns inlined — juniors have no access to `telegram_digest`) · `## Acceptance criteria` · `## Prompt for your agent` (paste-ready) · `## Notes / Watch out`. Shared rules live in `docs/WORKFLOW.md` in the repo. New tickets must follow this body.
 
 ## Queries (`notion-query-data-sources`, SQL mode, table = the data source url)
 
@@ -29,6 +31,7 @@ What's next:
 SELECT "Order", "Name", "Epic", "Est (days)", "Req" FROM "collection://c386dd00-19e7-4a53-9944-9b692e9a89da"
 WHERE "Release" = 'MVP' AND "Status" != 'Done' ORDER BY "Order" LIMIT 3
 ```
+What's next for one person: add `AND "Owner" = 'Artur'`.
 MVP progress:
 ```sql
 SELECT "Status", COUNT(*) n, SUM("Est (days)") days FROM "collection://c386dd00-19e7-4a53-9944-9b692e9a89da"
@@ -45,7 +48,12 @@ Insert a ticket between 7 and 8: create with `Order` 7.5 — never renumber the 
 - **Filters first, semantic fallback** (SDD D-1) — tickets 7 then 8, in that order; the misses from 7 become the semantic-only eval questions in 11.
 - **Eval questions (11) are written before agent.py (10) is finished** — otherwise they get biased toward what already passes.
 - **R2 = FR-22 FAQ store, FR-26 /stats + /reindex, cron ingestion** — the user agreed on 2026-09-16 to defer them; MVP must still pass AC-1…AC-6 without them.
-- **Solo dev, no Owner/Area columns** — add them only if someone else joins.
+- **Three juniors since 2026-09-16, each with an AI agent** — `Owner` + `Track` columns added. Tracks run in parallel because every module already exists as a stub with SDD signatures and strict-xfail tests (commit `fad4eb4`):
+  - A Search — Sanjar: 2 → 7 → 8 → 9
+  - B Ingest — Abdurauf: 3 → 4 → 5 → 6
+  - C Agent/Bot — Artur: 10 → 11 → 12 → 13 → 14 → 15 (10 starts against stubs; 12 needs 7/8 + data)
+  Cross-track handoffs written into the tickets: #13 needs `agent.last_run` from #10; #9 adds a one-line `escalate_sync` stub to bot.py for #14.
+- **Ticket 1 is Done** (scaffolding commit). Stubs raise `NotImplementedError("ticket #N")`; tests are `xfail(strict)` — a ticket is done when its markers are removed and the suite is green.
 
 ## When a ticket is finished
 
