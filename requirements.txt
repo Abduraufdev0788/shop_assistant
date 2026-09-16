@@ -1,0 +1,6 @@
+anthropic
+voyageai
+telethon
+numpy
+python-dotenv
+pytest

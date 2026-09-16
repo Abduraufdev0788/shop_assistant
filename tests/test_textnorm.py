@@ -1,0 +1,39 @@
+"""Ticket #2 — FR-9. Remove xfail_stub when normalise() is implemented."""
+import pytest
+
+from shop_assistant.textnorm import normalise
+from tests.conftest import xfail_stub
+
+
+@xfail_stub
+@pytest.mark.parametrize("a,b", [
+    ("Krossovka", "krossovka"),          # case
+    ("кроссовка", "krossovka"),          # ru Cyrillic → Latin
+    ("Кроссовка", "krossovka"),
+    ("oʻzbek", "ozbek"),                 # oʻ
+    ("o'zbek", "ozbek"),                 # o'
+    ("ўзбек", "ozbek"),                  # ў
+    ("gʻisht", "gisht"),
+    ("ғишт", "gisht"),
+    ("ҳамма", "hamma"),
+    ("қора", "qora"),
+    ("Dvoyka", "dvoyka"),
+    ("двойка", "dvoyka"),
+])
+def test_scripts_fold_to_one_form(a, b):
+    assert normalise(a) == normalise(b) == b
+
+
+@xfail_stub
+def test_whitespace_collapsed():
+    assert normalise("  qishki   kurtka \n") == "qishki kurtka"
+
+
+@xfail_stub
+def test_empty_string():
+    assert normalise("") == ""
+
+
+@xfail_stub
+def test_digits_and_punctuation_kept():
+    assert normalise("Razmer: 42") == "razmer: 42"

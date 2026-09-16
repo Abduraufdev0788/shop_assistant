@@ -1,6 +1,6 @@
 # Software Design Description — Shop Assistant
 
-Version 0.1 · 2026-09-16 · Status: draft · Implements: shop_assistant_SRS.md v0.3
+Version 0.2 · 2026-09-16 · Status: draft · Implements: shop_assistant_SRS.md v0.3
 
 ## 1. Overview
 
@@ -155,13 +155,15 @@ Loads `.env`, starts the bot, runs forever. Ingestion is **not** in the service:
 ## 5. Module Layout
 
 ```
-shop_assistant/
+shop_assistant/                   # repo root; run everything from here
   docs/shop_assistant_SRS.md, shop_assistant_SDD.md
-  config.py  textnorm.py  fetch.py  extract.py  index.py  search.py
-  tools.py   agent.py     bot.py    main.py
+  shop_assistant/                 # the package: `python -m shop_assistant.fetch`
+    config.py  models.py  textnorm.py  fetch.py  extract.py  index.py  search.py
+    tools.py   agent.py   bot.py      main.py
   eval/questions.jsonl        # 20 questions, expected: {"posts":[ids]} or {"escalate":true}
   eval/run_eval.py            # runs agent offline (ask_owner stubbed), prints AC-2..AC-4
-  tests/test_textnorm.py  tests/test_search.py  tests/test_extract.py (fixtures = real captions)
+  tests/                      # one file per module; stubs are xfail(strict) until their ticket lands
+  pytest.ini                  # xfail_strict = true
   data/  session/             # gitignored
   requirements.txt  .env.example  deploy.sh  shop-assistant.service
 ```
@@ -198,3 +200,4 @@ shop_assistant/
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-09-16 | Initial design against SRS v0.3 |
+| 0.2 | 2026-09-16 | §5: code lives in a `shop_assistant/` package (so `python -m shop_assistant.x` works from repo root); `models.py` holds Post/Product/FaqEntry; scaffolding + strict-xfail tests for tickets 1–15 |
