@@ -4,14 +4,47 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  checks: write          # test-result check
+  pull-requests: write   # result comment on the PR
+
 jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv venv && uv pip install -r requirements.txt
-      - run: uv run pytest -q
+      - run: uv venv && uv pip install -r requirements.txt pytest-github-actions-annotate-failures
+      - name: pytest
+        # -ra lists every non-passing test in the log; junit xml feeds the report below;
+        # the annotate plugin marks failing lines directly in the PR "Files changed" view.
+        run: uv run pytest -ra --junitxml=pytest.xml
+      - name: Test report (check + PR comment)
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: pytest.xml
+          check_name: test results
+          comment_mode: always
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## pytest"
+            python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          r = ET.parse("pytest.xml").getroot(); s = r if r.tag == "testsuite" else r[0]
+          t, f, e, sk = (int(s.get(k, 0)) for k in ("tests", "failures", "errors", "skipped"))
+          print(f"| passed | failed | errors | skipped |\n|---|---|---|---|\n| {t-f-e-sk} | {f} | {e} | {sk} |")
+          bad = [c for c in s if c.find("failure") is not None or c.find("error") is not None]
+          if bad:
+              print("\n### Failing\n")
+              for c in bad:
+                  msg = (c.find("failure") if c.find("failure") is not None else c.find("error")).get("message", "")
+                  print(f"- `{c.get('classname')}::{c.get('name')}` — {msg[:160]}")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
 
   tests-untouched:
     # Juniors never edit tests/. A senior adds the label `tests-by-senior` when the PR legitimately changes them.
@@ -23,5 +56,8 @@ jobs:
       - run: |
           changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- tests/)
           if [ -n "$changed" ]; then
-            echo "This PR changes tests/ — not allowed without the tests-by-senior label:"; echo "$changed"; exit 1
+            echo "::error::This PR changes files under tests/. Juniors must not edit tests — describe the problem in the ticket comments instead."
+            { echo "## ❌ tests/ was modified"; echo; echo '```'; echo "$changed"; echo '```'; echo; echo "Revert these files. If a test is wrong, write it in the ticket's Notion comments — Sanjarbek changes it."; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
+          echo "## ✅ tests/ untouched" >> "$GITHUB_STEP_SUMMARY"
