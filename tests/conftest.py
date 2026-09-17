@@ -14,10 +14,6 @@ CAPTION_KROSSOVKA = (
 )
 CAPTION_KURTKA = "🧥Qishki kurtka\nRang: qora, kok\nRazmer: L XL\nNarx: 1.200.000" + FOOTER
 
-xfail_stub = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="scaffolding — remove marker when the ticket is implemented")
-
-
 @pytest.fixture
 def posts() -> list[Post]:
     return [

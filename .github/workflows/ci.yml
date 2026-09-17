@@ -1,0 +1,27 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv && uv pip install -r requirements.txt
+      - run: uv run pytest -q
+
+  tests-untouched:
+    # Juniors never edit tests/. A senior adds the label `tests-by-senior` when the PR legitimately changes them.
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'tests-by-senior')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - run: |
+          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- tests/)
+          if [ -n "$changed" ]; then
+            echo "This PR changes tests/ — not allowed without the tests-by-senior label:"; echo "$changed"; exit 1
+          fi
