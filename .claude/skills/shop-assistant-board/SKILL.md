@@ -20,7 +20,7 @@ The backlog for `shop_assistant/` lives in Notion. Follow `Order` top to bottom 
 
 ## Schema
 
-`Name` title · `Order` number (dependency sequence, primary sort) · `Sprint` S1/S2/S3/R2 backlog · `Release` MVP/R2 · `Status` To Do/In Progress/Done · `Epic` E1 Setup/E2 Ingest/E3 Search/E4 Agent/E5 Bot/E6 Eval & Deploy · `Est (days)` · `Req` FR/NFR/AC ids · `Blocks` plain words · `Description` one line · `Owner` Sanjar/Abdurauf/Artur · `Track` A Search/B Ingest/C Agent/Bot.
+`Name` title · `Order` number (dependency sequence, primary sort) · `Sprint` S1/S2/S3/R2 backlog · `Release` MVP/R2 · `Status` To Do/In Progress/Done · `Epic` E1 Setup/E2 Ingest/E3 Search/E4 Agent/E5 Bot/E6 Eval & Deploy · `Est (days)` · `Req` FR/NFR/AC ids · `Blocks` plain words · `Description` one line · `Owner` Sanjar/Abdurauf/Artur (juniors; **Sanjar ≠ Sanjarbek** — Sanjarbek is the user/senior who writes tests and reviews) · `Track` A Search/B Ingest/C Agent/Bot.
 
 Ticket body (junior-ready, since 2026-09-16): `## Scope` (Goal, Needs, Files you touch) · `## Steps` (numbered, each with a command + expected output; describe the approach in prose — library, function names, key params, docs to read — **never paste implementation code**; juniors have no access to `telegram_digest`) · `## Acceptance criteria` · `## Prompt for your agent` (paste-ready) · `## Notes / Watch out`. Shared rules live in `docs/WORKFLOW.md` in the repo. New tickets must follow this body.
 
