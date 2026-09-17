@@ -1,6 +1,6 @@
 # Software Design Description — Shop Assistant
 
-Version 0.3 · 2026-09-17 · Status: draft · Implements: shop_assistant_SRS.md v0.3
+Version 0.4 · 2026-09-17 · Status: draft · Implements: shop_assistant_SRS.md v0.4
 
 ## 1. Overview
 
@@ -12,11 +12,11 @@ Six stages, one Python module each, every module runnable on its own (NFR-7). Da
  @status_dokon                                        customer ⇄ Telegram bot
       │ fetch.py (Telethon, user account)                        │
       ▼                                                          ▼ bot.py
- data/posts.jsonl        raw captions                      agent.py  (Claude, Tool Runner)
-      │ extract.py (Claude)                                     │ tools.py
+ data/posts.jsonl        raw captions                      agent.py  (Ollama LLM, Tool Runner)
+      │ extract.py (Ollama)                                     │ tools.py
       ▼                                                         ├─ find_products ─┐
  data/products.jsonl     structured records ◀───────────────────┤                 │ search.py
-      │ index.py (Voyage)                                       ├─ semantic_search┘
+      │ index.py (Ollama)                                       ├─ semantic_search┘
       ▼                                                         ├─ latest_posts
  data/embeddings.npy + data/embeddings_ids.json ◀───────────────┤
                                                                 ├─ search_faq ──▶ data/faq.jsonl
@@ -29,8 +29,9 @@ Six stages, one Python module each, every module runnable on its own (NFR-7). Da
 | Language | Python 3.11+ | same as the rest of the repo |
 | Telegram, channel history | Telethon **user account** | bots cannot read channel history; session pattern reused from `telegram_digest/tgclient.py` |
 | Telegram, customers + owner | Telethon **bot account** (BotFather token) | customers must not talk to a personal account; bot can message the owner; pattern from `telegram_digest/approval.py` |
-| LLM | Anthropic SDK, `client.beta.messages.tool_runner` | same agent loop as `telegram_digest/agent.py` and `course/09_tool_runner.py` |
-| Embeddings | Voyage `voyage-multilingual-2` (or current multilingual model), via `voyageai` SDK | C-2 |
+| LLM | **Ollama** on the Codeschool GPU server (RTX 5090), model `gemma4:31b` (tool calling), called through the Anthropic SDK's Anthropic-compatible endpoint (`ANTHROPIC_BASE_URL` → Ollama) with `client.beta.messages.tool_runner` | C-2; same agent loop as `telegram_digest/agent.py` |
+| Embeddings | **Ollama** `bge-m3` (multilingual, 1024-d) via the `ollama` Python client, same server | C-2; covers uz-Latin / uz-Cyrillic / ru |
+| Reaching Ollama | On the office LAN `http://192.168.0.218:11434`; elsewhere `ssh -N -L 11434:localhost:11434 codeschool` then `http://localhost:11434`; on the server itself `localhost` | no auth on the API — never expose it publicly |
 | Vector store | `numpy` array + cosine similarity | ≤ a few thousand posts; a DB adds nothing to learn yet |
 | Storage | JSONL files under `data/` | greppable, diffable, restart-safe (FR-6) |
 | Secrets | `.env` via `python-dotenv` | NFR-6 |
@@ -58,7 +59,7 @@ All files live in `shop_assistant/data/` (gitignored). One JSON object per line.
 ```
 - `category` ∈ fixed list: `kiyim`, `poyabzal`, `aksessuar`, `boshqa` (extend when the channel shows more).
 - `body` = caption with footer (FR-3a) and emoji stripped; this is the text that gets embedded.
-- `keywords` are produced by Claude in four scripts/languages (FR-4) and stored already **normalised** (§4.2).
+- `keywords` are produced by the LLM in four scripts/languages (FR-4) and stored already **normalised** (§4.2).
 
 ### 2.3 `embeddings.npy` + `embeddings_ids.json`
 `float32[N, D]` matrix, row *i* belongs to post `ids[i]`. Both rewritten together by index.py.
@@ -85,12 +86,12 @@ FAQ entries are embedded too (separate `faq_embeddings.npy`), so `search_faq` is
 
 ### 3.2 `extract.py` — FR-3a, FR-3b, FR-4
 - `strip_footer(caption) -> body`: drop lines matching phone / `@handle` / `📍` / delivery boilerplate; strip emoji.
-- `extract(body) -> Product` — one Claude call with a JSON schema (tool-use with a single `record_product` tool, forced) so the output is always valid. Prompt gives the fixed category list, price notation examples (`980.000ming` → 980000), and asks for keywords in uz-Latin, uz-Cyrillic, ru, en.
+- `extract(body) -> Product` — one LLM call (Ollama, `config.MODEL`) with a JSON schema (tool-use with a single `record_product` tool, forced) so the output is always valid. Prompt gives the fixed category list, price notation examples (`980.000ming` → 980000), and asks for keywords in uz-Latin, uz-Cyrillic, ru, en.
 - Batches of 10 posts per call to keep NFR-3.
 - CLI: `python -m shop_assistant.extract` processes posts not yet in `products.jsonl`.
 
 ### 3.3 `index.py` — FR-5, FR-6
-- `embed(texts: list[str]) -> np.ndarray` — Voyage, `input_type="document"`, batches of 128.
+- `embed(texts: list[str]) -> np.ndarray` — Ollama `/api/embed` with `config.EMBED_MODEL`, batches of `config.EMBED_BATCH`; `bge-m3` needs no query/document prefix.
 - Embeds `name + " " + body + " " + " ".join(keywords)` per product; rewrites `embeddings.npy` / `embeddings_ids.json` for all products (cheap at this size; simpler than patching rows).
 - Same for `faq.jsonl` → `faq_embeddings.npy`.
 - CLI: `python -m shop_assistant.index`.
@@ -102,7 +103,7 @@ FAQ entries are embedded too (separate `faq_embeddings.npy`), so `search_faq` is
 ### 3.5 `search.py` — FR-8, FR-10, FR-11, FR-12
 ```python
 def find_products(category=None, min_price=None, max_price=None, size=None, color=None, keywords=None, limit=5) -> list[Product]
-def semantic_search(text, max_price=None, limit=5) -> list[Product]     # Voyage query embedding, cosine, then price filter
+def semantic_search(text, max_price=None, limit=5) -> list[Product]     # Ollama query embedding, cosine, then price filter
 def latest_posts(n=5) -> list[Product]
 def search_faq(text, limit=3) -> list[FaqEntry]
 ```
@@ -124,7 +125,7 @@ Thin `@beta_tool` wrappers around §3.5 that return compact text (one line per p
   3. Never state price, size or availability not in tool output. Never guess stock.
   4. Escalate with `ask_owner` when: stock/availability asked, nothing relevant found, or question is outside the catalog.
   5. Max 5 products per reply; if more, ask the customer to narrow down. Always include links. Mark stale posts with the "may be sold out" note.
-- `max_iterations=8`, `max_tokens=1024`, model `claude-sonnet-5` (NFR-1/NFR-2; Opus only if eval demands it).
+- `max_iterations=8`, `max_tokens=1024`, model `config.MODEL` = `gemma4:31b` (NFR-1/NFR-2; switch to `qwen2.5:32b` only if the eval demands it).
 
 ### 3.8 `bot.py` — FR-19, FR-21, FR-22, FR-26, C-5
 - One Telethon bot client. Handlers:
@@ -135,7 +136,7 @@ Thin `@beta_tool` wrappers around §3.5 that return compact text (one line per p
 - Logs every turn to `log.jsonl` (FR-25).
 
 ### 3.9 `config.py`
-`CHANNEL = "status_dokon"`, `STALE_DAYS = 60`, `MAX_RESULTS = 5`, `CATEGORIES = [...]`, `FETCH_LIMIT = 500`, model names, paths. Secrets from env: `TG_API_ID`, `TG_API_HASH`, `TG_BOT_TOKEN`, `TG_OWNER_ID`, `ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`.
+`CHANNEL = "status_dokon"`, `STALE_DAYS = 60`, `MAX_RESULTS = 5`, `CATEGORIES = [...]`, `FETCH_LIMIT = 500`, model names (`MODEL = "gemma4:31b"`, `EMBED_MODEL = "bge-m3"`), paths. From env: `TG_API_ID`, `TG_API_HASH`, `TG_BOT_TOKEN`, `TG_OWNER_ID`, `OLLAMA_URL` (default `http://localhost:11434`). The Anthropic SDK is pointed at Ollama by setting `ANTHROPIC_BASE_URL = OLLAMA_URL` and a dummy `ANTHROPIC_API_KEY`.
 
 ### 3.10 `main.py`
 Loads `.env`, starts the bot, runs forever. Ingestion is **not** in the service: admin runs `fetch → extract → index` by hand or cron (FR-23), then sends `/reindex` to the bot (calls `search.reload()`).
@@ -145,7 +146,7 @@ Loads `.env`, starts the bot, runs forever. Ingestion is **not** in the service:
 | # | Decision | Alternative rejected | Reason |
 |---|---|---|---|
 | D-1 | Filters first, embeddings as fallback | embeddings only | numbers (size 42, ≤ 200k) embed badly; also the teaching point of the project |
-| D-2 | Structured extraction with forced tool-use JSON | regex on captions | template drifts; Claude handles "980.000ming", "Telegram obunachilariga narx", missing lines |
+| D-2 | Structured extraction with forced tool-use JSON | regex on captions | template drifts; the LLM handles "980.000ming", "Telegram obunachilariga narx", missing lines |
 | D-3 | Normalise scripts at index *and* query time | fuzzy matching at query time | one cheap deterministic function, testable in isolation |
 | D-4 | Rewrite the whole embedding matrix on index | patch rows | N is small; correctness over cleverness |
 | D-5 | Owner replies via Telegram "reply to" the escalation message | inline buttons / commands | zero UI to build; the quoted `#esc <id>` header carries the routing |
@@ -181,7 +182,7 @@ shop_assistant/                   # repo root; run everything from here
 | FR-23, 24 | CLIs of fetch/extract/index/search |
 | FR-25, 26 | bot.py logging, `/stats` |
 | NFR-1, 2 | Sonnet, max_iterations=8, compact tool output |
-| NFR-3 | extract batching (10/call), Voyage batching (128) |
+| NFR-3 | extract batching (10/call), embed batching (128) |
 | NFR-4 | in-memory history, log stores question text only |
 | NFR-5 | systemd `Restart=always` |
 | NFR-6 | `.env`, `data/` and `session/` gitignored |
@@ -191,7 +192,9 @@ shop_assistant/                   # repo root; run everything from here
 | AC-6 | restart service, confirm `search.py` loads from disk without network |
 
 ## 7. Risks
-- Voyage rate limits on first full index → batch + retry with backoff.
+- Ollama swaps models on demand and only one ~19 GB model fits the GPU at a time: alternating `gemma4:31b` and `bge-m3` calls costs seconds per swap → ingestion embeds in one pass after extraction; the bot calls embed only on the semantic fallback.
+- `gemma4:31b` tool calling through the Anthropic-compatible endpoint (forced `tool_choice`) is unverified → ticket #3 spike checks it before #5/#10.
+- Deploy target is the Codeschool server itself so Ollama is `localhost`.
 - Category list too narrow → `boshqa` bucket; review after first extract run.
 - Customer sends a photo/voice only → agent gets `<media>`; reply asking for text (v1), photo search is out of scope.
 - Owner forgets to *reply* to the `#esc` message → bot answers the owner with a hint.
@@ -202,3 +205,4 @@ shop_assistant/                   # repo root; run everything from here
 | 0.1 | 2026-09-16 | Initial design against SRS v0.3 |
 | 0.2 | 2026-09-16 | §5: code lives in a `shop_assistant/` package (so `python -m shop_assistant.x` works from repo root); `models.py` holds Post/Product/FaqEntry; scaffolding for tickets 1–15 |
 | 0.3 | 2026-09-17 | §5: tests per ticket live on the ticket branch (senior-written), `main` keeps only merged tests; CI added |
+| 0.4 | 2026-09-17 | SRS C-2 v0.4: Claude + Voyage replaced by Ollama on the Codeschool GPU server (`gemma4:31b`, `bge-m3`); §1.1, §3.2, §3.3, §3.7, §3.9, §7 updated; deploy target = Codeschool |

@@ -1,4 +1,4 @@
-"""Claude Tool Runner agent + per-customer history. SDD §3.7, FR-13…18/20. Ticket #10."""
+"""Tool Runner agent (Anthropic SDK → Ollama) + per-customer history. SDD §3.7, FR-13…18/20. Ticket #10."""
 
 SYSTEM_PROMPT = ""   # written in ticket #10 (SDD §3.7 rules 1–5)
 

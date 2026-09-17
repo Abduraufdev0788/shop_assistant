@@ -20,7 +20,7 @@ The backlog for `shop_assistant/` lives in Notion. Follow `Order` top to bottom 
 
 ## Schema
 
-`Name` title · `Order` number (dependency sequence, primary sort) · `Sprint` S1/S2/S3/R2 backlog · `Release` MVP/R2 · `Status` To Do/In Progress/Done · `Epic` E1 Setup/E2 Ingest/E3 Search/E4 Agent/E5 Bot/E6 Eval & Deploy · `Est (days)` · `Req` FR/NFR/AC ids · `Blocks` plain words · `Description` one line · `Owner` Sanjar/Abdurauf/Artur · `Track` A Search/B Ingest/C Agent/Bot.
+`Name` title · `Order` number (dependency sequence, primary sort) · `Sprint` S1/S2/S3/R2 backlog · `Release` MVP/R2 · `Status` To Do/In Progress/Done · `Epic` E1 Setup/E2 Ingest/E3 Search/E4 Agent/E5 Bot/E6 Eval & Deploy · `Est (days)` · `Req` FR/NFR/AC ids · `Blocks` plain words · `Description` one line · `Owner` Sanjar/Abdurauf/Artur (juniors; **Sanjar ≠ Sanjarbek** — Sanjarbek is the user/senior who writes tests and reviews) · `Track` A Search/B Ingest/C Agent/Bot.
 
 Ticket body (junior-ready, since 2026-09-16): `## Scope` (Goal, Needs, Files you touch) · `## Steps` (numbered, each with a command + expected output; describe the approach in prose — library, function names, key params, docs to read — **never paste implementation code**; juniors have no access to `telegram_digest`) · `## Acceptance criteria` · `## Prompt for your agent` (paste-ready) · `## Notes / Watch out`. Shared rules live in `docs/WORKFLOW.md` in the repo. New tickets must follow this body.
 
@@ -44,7 +44,8 @@ Insert a ticket between 7 and 8: create with `Order` 7.5 — never renumber the 
 ## Decisions behind the plan (do not undo silently)
 
 - **Order 2 is the gating ticket** — Product schema + `textnorm` are frozen first because extract, index, search and eval fixtures all depend on them; changing later means re-extracting every post.
-- **Order 3 (Voyage spike) sits before any code that uses embeddings** — it is the only external dependency, and its cross-script sanity check (кроссовки ≈ krossovka) validates design decision D-3. If it fails, revisit SDD before ticket 5.
+- **Local models only (SRS C-2 v0.4, 2026-09-17)** — Ollama on the Codeschool GPU server (`gemma4:31b` for LLM/tool calling, `bge-m3` for embeddings), reached via LAN `192.168.0.218:11434` or ssh tunnel; Anthropic SDK pointed at it by `config.py`. No Claude/Voyage keys anywhere. Deploy target = Codeschool. Server details: servers-docs skill → Codeschool Server/ai/ollama.md.
+- **Order 3 (Ollama spike) sits before any code that uses the models** — verifies cross-script similarity (D-3) and forced `tool_choice` through Ollama's Anthropic-compatible endpoint (D-2). `bge-m3` must be pulled on the server first. If either fails, revisit SDD before tickets 5/8/10.
 - **Filters first, semantic fallback** (SDD D-1) — tickets 7 then 8, in that order; the misses from 7 become the semantic-only eval questions in 11.
 - **Eval questions (11) are written before agent.py (10) is finished** — otherwise they get biased toward what already passes.
 - **R2 = FR-22 FAQ store, FR-26 /stats + /reindex, cron ingestion** — the user agreed on 2026-09-16 to defer them; MVP must still pass AC-1…AC-6 without them.
