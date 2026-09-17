@@ -7,7 +7,7 @@ A senior writes the **tests** for a ticket on a branch and assigns it to you. Yo
 
 ## 0. One-time setup
 ```bash
-git clone git@github.com:Sanjarbek17/shop_assistant.git && cd shop_assistant
+git clone git@github.com:bhgroupai/shop_assistant.git && cd shop_assistant
 uv venv && uv pip install -r requirements.txt
 cp .env.example .env            # fill only the keys your ticket lists; ask Sanjarbek for values
 # Models run on the Codeschool GPU server (Ollama). In the office: OLLAMA_URL=http://192.168.0.218:11434.
