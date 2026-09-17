@@ -11,10 +11,11 @@ HISTORY_TURNS = 10         # FR-17
 EXTRACT_BATCH = 10         # NFR-3
 EMBED_BATCH = 128          # NFR-3
 
-MODEL = "claude-sonnet-5"
+MODEL = "gemma4:31b"            # Ollama, tool calling (SDD §1.1)
 MAX_ITERATIONS = 8
 MAX_TOKENS = 1024
-VOYAGE_MODEL = "voyage-multilingual-2"
+EMBED_MODEL = "bge-m3"           # Ollama, multilingual embeddings, 1024-d
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -29,8 +30,11 @@ STATE_PATH = DATA_DIR / "state.json"
 LOG_PATH = DATA_DIR / "log.jsonl"
 
 # Secrets — read lazily so importing config never fails without .env (NFR-6).
-ENV_KEYS = ("TG_API_ID", "TG_API_HASH", "TG_BOT_TOKEN", "TG_OWNER_ID",
-            "ANTHROPIC_API_KEY", "VOYAGE_API_KEY")
+ENV_KEYS = ("TG_API_ID", "TG_API_HASH", "TG_BOT_TOKEN", "TG_OWNER_ID")
+
+# The Anthropic SDK talks to Ollama's Anthropic-compatible endpoint; no real key needed.
+os.environ.setdefault("ANTHROPIC_BASE_URL", OLLAMA_URL)
+os.environ.setdefault("ANTHROPIC_API_KEY", "ollama")
 
 
 def secret(name: str) -> str:

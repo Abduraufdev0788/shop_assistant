@@ -1,4 +1,4 @@
-"""Footer strip + Claude structured extraction. SDD §3.2, FR-3a/3b/4. Ticket #5."""
+"""Footer strip + LLM structured extraction (Ollama via Anthropic SDK). SDD §3.2, FR-3a/3b/4. Ticket #5."""
 from shop_assistant.models import Post, Product
 
 

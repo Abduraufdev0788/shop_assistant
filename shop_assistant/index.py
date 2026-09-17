@@ -1,4 +1,4 @@
-"""Embed products with Voyage, persist matrix. SDD §3.3, FR-5/6. Ticket #6."""
+"""Embed products with Ollama (bge-m3), persist matrix. SDD §3.3, FR-5/6. Ticket #6."""
 from shop_assistant.models import Product
 
 
@@ -7,8 +7,8 @@ def product_text(p: Product) -> str:
     raise NotImplementedError("ticket #6")
 
 
-def embed(texts: list[str], input_type: str = "document"):
-    """Voyage embeddings, batches of config.EMBED_BATCH → float32[N, D] ndarray."""
+def embed(texts: list[str]):
+    """Ollama /api/embed with config.EMBED_MODEL at config.OLLAMA_URL, batches of config.EMBED_BATCH → float32[N, D]."""
     raise NotImplementedError("ticket #6")
 
 

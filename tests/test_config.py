@@ -17,9 +17,9 @@ def test_data_paths_are_gitignored():
 
 
 def test_secret_missing_raises(monkeypatch):
-    monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
-    with pytest.raises(RuntimeError, match="VOYAGE_API_KEY"):
-        config.secret("VOYAGE_API_KEY")
+    monkeypatch.delenv("TG_BOT_TOKEN", raising=False)
+    with pytest.raises(RuntimeError, match="TG_BOT_TOKEN"):
+        config.secret("TG_BOT_TOKEN")
 
 
 def test_secret_unknown_key():
@@ -30,3 +30,10 @@ def test_secret_unknown_key():
 def test_secret_present(monkeypatch):
     monkeypatch.setenv("TG_BOT_TOKEN", "123:abc")
     assert config.secret("TG_BOT_TOKEN") == "123:abc"
+
+
+def test_ollama_defaults_point_anthropic_sdk_at_ollama():
+    assert config.MODEL == "gemma4:31b" and config.EMBED_MODEL == "bge-m3"
+    assert config.OLLAMA_URL.startswith("http")
+    import os
+    assert os.environ["ANTHROPIC_BASE_URL"] == config.OLLAMA_URL

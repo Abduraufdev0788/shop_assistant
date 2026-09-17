@@ -10,6 +10,8 @@ A senior writes the **tests** for a ticket on a branch and assigns it to you. Yo
 git clone git@github.com:Sanjarbek17/shop_assistant.git && cd shop_assistant
 uv venv && uv pip install -r requirements.txt
 cp .env.example .env            # fill only the keys your ticket lists; ask Sanjar for values
+# Models run on the Codeschool GPU server (Ollama). In the office: OLLAMA_URL=http://192.168.0.218:11434.
+# From home: `ssh -N -L 11434:localhost:11434 codeschool` in a second terminal, keep OLLAMA_URL=http://localhost:11434.
 uv run pytest -q                # expect: all passed
 ```
 Never commit `.env`, `data/`, `session/` (already gitignored).
