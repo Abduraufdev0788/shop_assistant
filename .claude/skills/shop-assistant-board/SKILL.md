@@ -44,7 +44,8 @@ Insert a ticket between 7 and 8: create with `Order` 7.5 — never renumber the 
 ## Decisions behind the plan (do not undo silently)
 
 - **Order 2 is the gating ticket** — Product schema + `textnorm` are frozen first because extract, index, search and eval fixtures all depend on them; changing later means re-extracting every post.
-- **Order 3 (Voyage spike) sits before any code that uses embeddings** — it is the only external dependency, and its cross-script sanity check (кроссовки ≈ krossovka) validates design decision D-3. If it fails, revisit SDD before ticket 5.
+- **Local models only (SRS C-2 v0.4, 2026-09-17)** — Ollama on the Codeschool GPU server (`gemma4:31b` for LLM/tool calling, `bge-m3` for embeddings), reached via LAN `192.168.0.218:11434` or ssh tunnel; Anthropic SDK pointed at it by `config.py`. No Claude/Voyage keys anywhere. Deploy target = Codeschool. Server details: servers-docs skill → Codeschool Server/ai/ollama.md.
+- **Order 3 (Ollama spike) sits before any code that uses the models** — verifies cross-script similarity (D-3) and forced `tool_choice` through Ollama's Anthropic-compatible endpoint (D-2). `bge-m3` must be pulled on the server first. If either fails, revisit SDD before tickets 5/8/10.
 - **Filters first, semantic fallback** (SDD D-1) — tickets 7 then 8, in that order; the misses from 7 become the semantic-only eval questions in 11.
 - **Eval questions (11) are written before agent.py (10) is finished** — otherwise they get biased toward what already passes.
 - **R2 = FR-22 FAQ store, FR-26 /stats + /reindex, cron ingestion** — the user agreed on 2026-09-16 to defer them; MVP must still pass AC-1…AC-6 without them.
