@@ -1,6 +1,9 @@
 """Constants and secret names. SDD §3.9. Ticket #1."""
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 CHANNEL = "status_dokon"
 STALE_DAYS = 60            # FR-16
