@@ -47,17 +47,24 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   tests-untouched:
-    # Juniors never edit tests/. A senior adds the label `tests-by-senior` when the PR legitimately changes them.
+    # Juniors never edit tests/. Every commit in the PR that touches tests/ must be authored by a senior.
+    # (Comparing files against main is not enough: a test file that exists only on the ticket branch
+    #  can be added and then deleted, which looks like "no change" against main.)
     if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'tests-by-senior')
     runs-on: ubuntu-latest
+    env:
+      SENIORS: "Sanjarbek17"   # GitHub logins / git author names allowed to touch tests/, space-separated
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - run: |
-          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- tests/)
-          if [ -n "$changed" ]; then
-            echo "::error::This PR changes files under tests/. Juniors must not edit tests — describe the problem in the ticket comments instead."
-            { echo "## ❌ tests/ was modified"; echo; echo '```'; echo "$changed"; echo '```'; echo; echo "Revert these files. If a test is wrong, write it in the ticket's Notion comments — Sanjarbek changes it."; } >> "$GITHUB_STEP_SUMMARY"
+          bad=$(git log --format='%h %an <%ae>' origin/${{ github.base_ref }}..HEAD -- tests/ \
+                | grep -v -E "$(echo $SENIORS | sed 's/ /|/g')" || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Commits by non-seniors touch tests/. Revert them — describe the problem in the ticket instead."
+            { echo "## ❌ tests/ was modified by a non-senior"; echo; echo '```'; echo "$bad"; echo '```'; echo
+              echo "Revert these commits (adding, editing **or deleting** anything under tests/ is not allowed)."
+              echo "If a test is wrong, write it in the ticket's Notion comments — Sanjarbek changes it."; } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo "## ✅ tests/ untouched" >> "$GITHUB_STEP_SUMMARY"
+          echo "## ✅ tests/ only touched by seniors" >> "$GITHUB_STEP_SUMMARY"
