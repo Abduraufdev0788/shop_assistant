@@ -17,6 +17,11 @@ from shop_assistant.textnorm import normalise
     ("қора", "qora"),
     ("Dvoyka", "dvoyka"),
     ("двойка", "dvoyka"),
+    ("куртка", "kurtka"),                # from CAPTION_KURTKA
+    ("қишки", "qishki"),                # from CAPTION_KURTKA
+    ("самарқанд", "samarqand"),          # from FOOTER
+    ("янги", "yangi"),                  # from CAPTION_DVOYKA
+    ("нарх", "narx"),                   # from CAPTION_DVOYKA
 ])
 def test_scripts_fold_to_one_form(a, b):
     assert normalise(a) == normalise(b) == b
