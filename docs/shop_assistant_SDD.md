@@ -1,6 +1,6 @@
 # Software Design Description — Shop Assistant
 
-Version 0.2 · 2026-09-16 · Status: draft · Implements: shop_assistant_SRS.md v0.3
+Version 0.3 · 2026-09-17 · Status: draft · Implements: shop_assistant_SRS.md v0.3
 
 ## 1. Overview
 
@@ -162,8 +162,8 @@ shop_assistant/                   # repo root; run everything from here
     tools.py   agent.py   bot.py      main.py
   eval/questions.jsonl        # 20 questions, expected: {"posts":[ids]} or {"escalate":true}
   eval/run_eval.py            # runs agent offline (ask_owner stubbed), prints AC-2..AC-4
-  tests/                      # one file per module; stubs are xfail(strict) until their ticket lands
-  pytest.ini                  # xfail_strict = true
+  tests/                      # only tests for merged work; a ticket's tests live on its branch until merged
+  .github/                    # CI (pytest + tests/ untouched check), CODEOWNERS, PR template
   data/  session/             # gitignored
   requirements.txt  .env.example  deploy.sh  shop-assistant.service
 ```
@@ -200,4 +200,5 @@ shop_assistant/                   # repo root; run everything from here
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-09-16 | Initial design against SRS v0.3 |
-| 0.2 | 2026-09-16 | §5: code lives in a `shop_assistant/` package (so `python -m shop_assistant.x` works from repo root); `models.py` holds Post/Product/FaqEntry; scaffolding + strict-xfail tests for tickets 1–15 |
+| 0.2 | 2026-09-16 | §5: code lives in a `shop_assistant/` package (so `python -m shop_assistant.x` works from repo root); `models.py` holds Post/Product/FaqEntry; scaffolding for tickets 1–15 |
+| 0.3 | 2026-09-17 | §5: tests per ticket live on the ticket branch (senior-written), `main` keeps only merged tests; CI added |

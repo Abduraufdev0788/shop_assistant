@@ -48,12 +48,15 @@ Insert a ticket between 7 and 8: create with `Order` 7.5 — never renumber the 
 - **Filters first, semantic fallback** (SDD D-1) — tickets 7 then 8, in that order; the misses from 7 become the semantic-only eval questions in 11.
 - **Eval questions (11) are written before agent.py (10) is finished** — otherwise they get biased toward what already passes.
 - **R2 = FR-22 FAQ store, FR-26 /stats + /reindex, cron ingestion** — the user agreed on 2026-09-16 to defer them; MVP must still pass AC-1…AC-6 without them.
-- **Three juniors since 2026-09-16, each with an AI agent** — `Owner` + `Track` columns added. Tracks run in parallel because every module already exists as a stub with SDD signatures and strict-xfail tests (commit `fad4eb4`):
+- **Three juniors since 2026-09-16, each with an AI agent** — `Owner` + `Track` columns. Tracks run in parallel because every module exists as a stub with SDD signatures (commit `fad4eb4`):
   - A Search — Sanjar: 2 → 7 → 8 → 9
   - B Ingest — Abdurauf: 3 → 4 → 5 → 6
   - C Agent/Bot — Artur: 10 → 11 → 12 → 13 → 14 → 15 (10 starts against stubs; 12 needs 7/8 + data)
   Cross-track handoffs written into the tickets: #13 needs `agent.last_run` from #10; #9 adds a one-line `escalate_sync` stub to bot.py for #14.
-- **Ticket 1 is Done** (scaffolding commit). Stubs raise `NotImplementedError("ticket #N")`; tests are `xfail(strict)` — a ticket is done when its markers are removed and the suite is green.
+- **Test flow (decided 2026-09-17, user's deliberate choice — not the mainstream "implementer writes tests"):** a senior writes a ticket's tests on branch `t<N>-<name>` (pushed to origin), assigns it; the junior implements on that branch and never edits `tests/`; PR to `main`; CI (`.github/workflows/ci.yml`: pytest + a job that fails if `tests/` changed without label `tests-by-senior`) + senior review; merge. `main` holds tests only for merged work — **no pre-written suite on main, no xfail markers**. Branches with tests: t2, t4, t5, t6, t7, t8 (`test_search_semantic.py`), t9, t10, t12, t13, t14 (`test_bot_escalation.py`). #3/#11/#15 have no tests; junior creates the branch. Rules for juniors: `docs/WORKFLOW.md`.
+- **Planned evolution:** once juniors are trusted, senior writes 2–3 acceptance tests and juniors add unit tests in the PR. Don't propose it before the user asks.
+- **Ticket 1 is Done** (scaffolding commit).
+- **Branch protection on `main`** (PR required, CI checks `tests` + `tests-untouched`, 1 approval) must be set in the GitHub UI — `gh` is not installed on this machine.
 
 ## When a ticket is finished
 
